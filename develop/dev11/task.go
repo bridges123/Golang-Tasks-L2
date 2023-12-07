@@ -1,5 +1,18 @@
 package main
 
+import (
+	"fmt"
+	"github.com/gorilla/mux"
+	"httpservermodule/calendar/mapper"
+	"httpservermodule/calendar/repository"
+	"httpservermodule/calendar/service"
+	"httpservermodule/handlers"
+	"httpservermodule/middleware"
+	"log"
+	"net/http"
+	"time"
+)
+
 /*
 === HTTP server ===
 
@@ -23,5 +36,32 @@ package main
 */
 
 func main() {
+	r := mux.NewRouter()
 
+	eventRepo := repository.NewEventRepository()
+	eventService := service.NewEventService(eventRepo)
+	eventMapper := mapper.NewEventMapper()
+	calendarEventHandler := handlers.NewCalendarEventHandler(eventService, eventMapper)
+
+	// Обработчики HTTP-методов
+	r.HandleFunc("/create_event", calendarEventHandler.CreateEventHandler).Methods("POST")
+	r.HandleFunc("/update_event", calendarEventHandler.UpdateEventHandler).Methods("POST")
+	r.HandleFunc("/delete_event", calendarEventHandler.DeleteEventHandler).Methods("POST")
+	r.HandleFunc("/events_for_day", calendarEventHandler.EventsForDayHandler).Methods("GET")
+	r.HandleFunc("/events_for_week", calendarEventHandler.EventsForWeekHandler).Methods("GET")
+	r.HandleFunc("/events_for_month", calendarEventHandler.EventsForMonthHandler).Methods("GET")
+
+	// Применение middleware для логирования
+	r.Use(middleware.LoggingMiddleware)
+
+	port := 8080
+	server := &http.Server{
+		Addr:         fmt.Sprintf(":%d", port),
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	fmt.Printf("Starting server on :%d...\n", port)
+	log.Fatal(server.ListenAndServe())
 }
