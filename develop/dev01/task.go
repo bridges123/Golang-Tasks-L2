@@ -21,7 +21,7 @@ import (
 func main() {
 	time, err := ntp.Time("pool.ntp.org")
 	if err != nil {
-		os.Stderr.WriteString("Failed to get current time!\n")
+		os.Stderr.WriteString(err.Error())
 		os.Exit(1)
 	}
 	hour, minute, sec := time.Clock()
